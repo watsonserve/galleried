@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"io"
 	"mime"
 	"net/http"
@@ -16,7 +17,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/watsonserve/goengine"
-	"github.com/watsonserve/imghelper"
 )
 
 func GenUUIDStr() (string, error) {
@@ -113,6 +113,10 @@ func GetOrigin(header *http.Header) *url.URL {
 		Scheme: "https:",
 		Host:   strURL,
 	}
+}
+
+func GetEncodeType(header *http.Header) string {
+	return header.Get("Content-Encoding")
 }
 
 func GetExtNameByReq(header *http.Header) ([]string, error) {
@@ -287,14 +291,15 @@ func GenPreview(rootPath, baseName, extName string) error {
 	preview := path.Join(rootPath, "preview", genFile)
 	thumb := path.Join(rootPath, "thumb", genFile)
 
-	mat, err := imghelper.IMRead(absPath)
-	if nil != err {
-		return err
-	}
+	fmt.Printf("gen-preview --thumb=%s --preview=%s %s\n", thumb, preview, absPath)
+	// mat, err := imghelper.IMRead(absPath)
+	// if nil != err {
+	// 	return err
+	// }
 
-	err = imghelper.IMWrite(mat, preview, 64, 960)
-	if nil == err {
-		err = imghelper.IMWrite(mat, thumb, 50, 320)
-	}
-	return err
+	// err = imghelper.IMWrite(mat, preview, 64, 960)
+	// if nil == err {
+	// 	err = imghelper.IMWrite(mat, thumb, 50, 320)
+	// }
+	return nil
 }

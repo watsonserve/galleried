@@ -6,14 +6,12 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/watsonserve/goengine v0.1.9
 	github.com/watsonserve/goutils v0.1.18
-	github.com/watsonserve/imghelper v0.0.4
 )
 
 require (
 	github.com/kr/text v0.2.0 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
-	github.com/strukturag/libheif-go v0.0.0-20250130134905-55b3482bea15 // indirect
-	gocv.io/x/gocv v0.31.0 // indirect
+	github.com/stretchr/testify v1.10.0 // indirect
 )
 
 require (

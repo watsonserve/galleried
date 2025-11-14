@@ -1,6 +1,7 @@
 package services
 
 import (
+	"compress/gzip"
 	"fmt"
 	"io"
 	"net/http"
@@ -110,6 +111,7 @@ func (d *FileService) SendFile(resp http.ResponseWriter, req *http.Request) {
 func (d *FileService) Upload(resp http.ResponseWriter, req *http.Request) {
 	reqHeader := &req.Header
 	cType := strings.Split(reqHeader.Get("Content-Type"), ";")[0]
+	encoding := helper.GetEncodeType(reqHeader)
 	origin := helper.GetOrigin(reqHeader)
 	digest := helper.GetDigest(reqHeader, "sha-256")
 	matchETag := helper.GetMatch(reqHeader)
@@ -158,7 +160,22 @@ func (d *FileService) Upload(resp http.ResponseWriter, req *http.Request) {
 	default:
 	}
 
-	eTagVal, siz, cTime, err := helper.CreateNewFile(path.Join(d.rootPath, "raw"), path.Ext(fileName), digest, req.Body)
+	body := req.Body
+	switch encoding {
+	case "gzip":
+		reader, err := gzip.NewReader(req.Body)
+		if nil != err {
+			StdJSONResp(resp, nil, http.StatusBadRequest, "")
+			return
+		}
+		body = reader
+	case "":
+	default:
+		StdJSONResp(resp, nil, http.StatusBadRequest, "unsurpported Content-Encoding "+encoding)
+		return
+	}
+	defer body.Close()
+	eTagVal, siz, cTime, err := helper.CreateNewFile(path.Join(d.rootPath, "raw"), path.Ext(fileName), digest, body)
 	if nil != err {
 		StdJSONResp(resp, nil, http.StatusServiceUnavailable, err.Error())
 		return
