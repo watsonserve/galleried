@@ -8,21 +8,23 @@ import (
 )
 
 type PictureAction struct {
-	listSrv http.Handler
-	dav     http.Handler
+	prefixLen int
+	listSrv   http.Handler
+	dav       http.Handler
 }
 
 var imgCache = map[string]bool{"thumb": true, "preview": true, "raw": true}
 
-func NewPictureAction(listSrv http.Handler, fileSrv http.Handler) *PictureAction {
+func NewPictureAction(prefixLen int, listSrv http.Handler, fileSrv http.Handler) *PictureAction {
 	return &PictureAction{
-		listSrv: listSrv,
-		dav:     fileSrv,
+		prefixLen: prefixLen,
+		listSrv:   listSrv,
+		dav:       fileSrv,
 	}
 }
 
 func (d *PictureAction) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
-	subPath := req.URL.Path[9:]
+	subPath := req.URL.Path[d.prefixLen:]
 
 	if "/" == subPath {
 		d.listSrv.ServeHTTP(resp, req)

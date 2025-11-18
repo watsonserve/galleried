@@ -36,8 +36,8 @@ func createNewFile(dir, ext string, perm os.FileMode) (string, *os.File, error) 
 	if 0 < len(ext) && '.' != ext[0] {
 		ext = "." + ext
 	}
-	if "" == dir || '/' != dir[len(dir)-1] {
-		dir += "/"
+	if "" == dir {
+		dir = "/"
 	}
 
 	for i := 0; i < 16; i++ {
@@ -234,7 +234,11 @@ func Write(fp *os.File, offset int64, src io.Reader) error {
 func GetUid(req *http.Request) string {
 	ctx := req.Context()
 	session := ctx.Value("session").(*goengine.Session)
-	return session.Get("uid").(string)
+	uid := session.Get("uid")
+	if nil == uid {
+		return ""
+	}
+	return uid.(string)
 }
 
 type ETag struct {

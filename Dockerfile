@@ -7,3 +7,4 @@ cd ./galleried && export GOPROXY=goproxy.cn && go build -ldflags "-s -w" -buildv
 FROM ubuntu:24.04
 # RUN apt-get update && apt-get -y install libopencv-core406t64 libopencv-imgproc406t64 libopencv-imgcodecs406t64 && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /home/galleried/galleried /usr/local/bin/
+CMD galleried

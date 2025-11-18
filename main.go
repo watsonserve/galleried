@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/watsonserve/galleried/action"
 	"github.com/watsonserve/galleried/dao"
@@ -37,7 +38,7 @@ func main() {
 		return
 	}
 	if !hasConf {
-		confFile = "/etc/galleried.conf"
+		confFile = "/etc/galleried/galleried.conf"
 	}
 	conf, err := goutils.GetConf(confFile)
 	if nil != err {
@@ -46,38 +47,45 @@ func main() {
 	}
 
 	dbConn := goengine.ConnPg(&goengine.DbConf{
-		User:   conf["db_user"][0],
-		Passwd: conf["db_passwd"][0],
-		Host:   conf["db_host"][0],
-		Name:   conf["db_name"][0],
-		Port:   conf["db_port"][0],
+		User:   conf.GetVal("db_user"),
+		Passwd: conf.GetVal("db_passwd"),
+		Host:   conf.GetVal("db_host"),
+		Name:   conf.GetVal("db_name"),
+		Port:   conf.GetVal("db_port"),
 	})
 	rootDir := conf["root"][0]
 	fmt.Printf("root: %s\n", rootDir)
 
 	sessMgr := goengine.InitSessionManager(
-		goengine.NewRedisStore(conf["redis_address"][0], conf["redis_password"][0], 1),
-		conf["sess_name"][0],
-		conf["cookie_prefix"][0],
-		conf["session_prefix"][0],
-		conf["domain"][0],
+		goengine.NewRedisStore(conf.GetVal("redis_address"), conf.GetVal("redis_password"), 1),
+		conf.GetVal("sess_name"),
+		conf.GetVal("cookie_prefix"),
+		conf.GetVal("session_prefix"),
+		conf.GetVal("domain"),
 	)
 
 	dbi := dao.NewDAO(dbConn)
 
+	prefix := conf.GetVal("path_prefix")
+	if !strings.HasSuffix(prefix, "/") {
+		prefix += "/"
+	}
+
 	listSrv := services.NewListService(dbi, rootDir)
 	fileSrv := services.NewFileService(dbi, rootDir)
 
-	p := action.NewPictureAction(listSrv, fileSrv)
+	p := action.NewPictureAction(len(prefix)-1, listSrv, fileSrv)
 
 	router := goengine.InitHttpRoute()
-	router.StartWith(conf["path_prefix"][0]+"/", p.ServeHTTP)
+	router.StartWith(prefix, p.ServeHTTP)
 	engine := goengine.New(router, sessMgr)
 
-	listen := conf["listen"][0]
-	listen_1 := addr[0]
-	if "" != listen_1 {
-		listen = listen_1
+	listen := conf.GetVal("listen")
+	if 0 != len(addr) {
+		listen = addr[0]
 	}
-	http.ListenAndServe(listen, engine)
+
+	if err = http.ListenAndServe(listen, engine); nil != err {
+		panic(err)
+	}
 }

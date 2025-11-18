@@ -20,7 +20,7 @@ type ResUserImg struct {
 	CTime    int64
 }
 
-const selectSQL = "SELECT filename, etag, ctime FROM res_user_img WHERE rtime=0 AND uid=$1 ORDER BY ctime DESC OFFSET=$2"
+const selectSQL = "SELECT filename, etag, ctime FROM res_user_img WHERE rtime=0 AND uid=$1 ORDER BY ctime DESC OFFSET $2"
 
 func NewDAO(dbConn *sql.DB) *DBI {
 	dao := goengine.InitDAO(dbConn)
@@ -29,7 +29,7 @@ func NewDAO(dbConn *sql.DB) *DBI {
 	dao.Prepare("info", "SELECT etag FROM res_user_img WHERE uid=$1 AND filename=$2 AND rtime=0")
 	// LIST
 	dao.Prepare("list", selectSQL)
-	dao.Prepare("list_limit", selectSQL+" LIMIT=$3")
+	dao.Prepare("list_limit", selectSQL+" LIMIT $3")
 	// DELETE
 	dao.Prepare("delt", "UPDATE res_user_img SET rtime=$3 WHERE uid=$1 AND filename=$2 AND rtime=0")
 	dao.Prepare("drop", "DELETE FROM res_user_img WHERE uid=$1 AND filename=$2 AND rtime<>0")
