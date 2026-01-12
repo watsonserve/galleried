@@ -68,11 +68,11 @@ func main() {
 	listSrv := services.NewListService(dbi, rootDir)
 	fileSrv := services.NewFileService(dbi, rootDir)
 
-	p := action.NewPictureAction(listSrv, fileSrv)
+	p := action.NewPictureAction(sessMgr, listSrv, fileSrv)
 
 	router := goengine.InitHttpRoute()
 	router.StartWith(conf["path_prefix"][0]+"/", p.ServeHTTP)
-	engine := goengine.New(router, sessMgr)
+	engine := goengine.New(router, nil)
 
 	listen := conf["listen"][0]
 	listen_1 := addr[0]
