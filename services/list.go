@@ -1,7 +1,6 @@
 package services
 
 import (
-	"net/http"
 	"path"
 
 	"github.com/watsonserve/galleried/dao"
@@ -25,32 +24,32 @@ func (d *ListService) List(uid string, rangeList []helper.Segment) ([]dao.ResUse
 
 }
 
-func (d *ListService) delt(uid string, resp http.ResponseWriter, req *http.Request) {
-	fileName := helper.GetFileName(req.URL.Path)
-	if "" == uid {
-		StdJSONResp(resp, nil, http.StatusUnauthorized, "")
-		return
-	}
-	err := d.dbi.Del(uid, fileName)
-	if nil != err {
-		StdJSONResp(resp, nil, http.StatusBadRequest, err.Error())
-		return
-	}
+// func (d *ListService) delt(uid string, resp http.ResponseWriter, req *http.Request) {
+// 	fileName := helper.GetFileName(req.URL.Path)
+// 	if "" == uid {
+// 		StdJSONResp(resp, nil, http.StatusUnauthorized, "")
+// 		return
+// 	}
+// 	err := d.dbi.Del(uid, fileName)
+// 	if nil != err {
+// 		StdJSONResp(resp, nil, http.StatusBadRequest, err.Error())
+// 		return
+// 	}
 
-	StdJSONResp(resp, nil, 0, "")
-}
+// 	StdJSONResp(resp, nil, 0, "")
+// }
 
-func (d *ListService) drop(uid string, resp http.ResponseWriter, req *http.Request) {
-	fileName := helper.GetFileName(req.URL.Path)
-	if "" == uid {
-		StdJSONResp(resp, nil, http.StatusUnauthorized, "")
-		return
-	}
-	err := d.dbi.Drop(uid, fileName)
-	if nil != err {
-		StdJSONResp(resp, nil, http.StatusBadRequest, err.Error())
-		return
-	}
+// func (d *ListService) drop(uid string, resp http.ResponseWriter, req *http.Request) {
+// 	fileName := helper.GetFileName(req.URL.Path)
+// 	if "" == uid {
+// 		StdJSONResp(resp, nil, http.StatusUnauthorized, "")
+// 		return
+// 	}
+// 	err := d.dbi.Drop(uid, fileName)
+// 	if nil != err {
+// 		StdJSONResp(resp, nil, http.StatusBadRequest, err.Error())
+// 		return
+// 	}
 
-	StdJSONResp(resp, nil, 0, "")
-}
+// 	StdJSONResp(resp, nil, 0, "")
+// }

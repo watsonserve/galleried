@@ -104,7 +104,7 @@ func (d *PictureAction) read(resp http.ResponseWriter, req *http.Request) {
 	fileName := helper.GetFileName(req.URL.Path)
 	cachedETag := helper.GetNoneMatch(&req.Header)
 	if "" == uid {
-		services.StdJSONResp(resp, nil, http.StatusUnauthorized, "")
+		StdJSONResp(resp, nil, http.StatusUnauthorized, "")
 		return
 	}
 
@@ -114,7 +114,7 @@ func (d *PictureAction) read(resp http.ResponseWriter, req *http.Request) {
 			resp.WriteHeader(http.StatusNotModified)
 			resp.Write(nil)
 		} else {
-			services.StdJSONResp(resp, nil, stat, msg)
+			StdJSONResp(resp, nil, stat, msg)
 		}
 		return
 	}
@@ -137,7 +137,7 @@ func (d *PictureAction) read(resp http.ResponseWriter, req *http.Request) {
 func (d *PictureAction) write(resp http.ResponseWriter, req *http.Request) {
 	params, stat, msg := getPrams(d.sgr, req)
 	if 0 != stat {
-		services.StdJSONResp(resp, nil, stat, msg)
+		StdJSONResp(resp, nil, stat, msg)
 		return
 	}
 
@@ -146,20 +146,20 @@ func (d *PictureAction) write(resp http.ResponseWriter, req *http.Request) {
 	opt := d.dav.CheckOption(uid, fileName, params.IfMatch)
 	switch opt {
 	case services.Removed:
-		services.StdJSONResp(resp, nil, http.StatusGone, "")
+		StdJSONResp(resp, nil, http.StatusGone, "")
 		return
 	case services.Existed:
-		services.StdJSONResp(resp, nil, http.StatusForbidden, "Existed")
+		StdJSONResp(resp, nil, http.StatusForbidden, "Existed")
 		return
 	case services.NotMatch:
-		services.StdJSONResp(resp, nil, http.StatusPreconditionFailed, "")
+		StdJSONResp(resp, nil, http.StatusPreconditionFailed, "")
 		return
 	default:
 	}
 
 	body, err := getInStream(req)
 	if nil != err {
-		services.StdJSONResp(resp, nil, http.StatusBadRequest, err.Error())
+		StdJSONResp(resp, nil, http.StatusBadRequest, err.Error())
 		return
 	}
 	defer body.Close()
@@ -167,12 +167,12 @@ func (d *PictureAction) write(resp http.ResponseWriter, req *http.Request) {
 	digest := params.Digest
 	eTagVal, siz, cTime, err := d.dav.WriteFile(fileName, digest, body)
 	if nil != err {
-		services.StdJSONResp(resp, nil, http.StatusServiceUnavailable, err.Error())
+		StdJSONResp(resp, nil, http.StatusServiceUnavailable, err.Error())
 		return
 	}
 	err = d.dav.WriteIndex(opt, uid, eTagVal, digest, fileName, siz, cTime)
 	if nil != err {
-		services.StdJSONResp(resp, nil, http.StatusBadRequest, err.Error())
+		StdJSONResp(resp, nil, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -181,41 +181,41 @@ func (d *PictureAction) write(resp http.ResponseWriter, req *http.Request) {
 	respHeader := resp.Header()
 	respHeader.Set("Location", origin.String())
 	respHeader.Set("ETag", "\""+eTagVal+"\"")
-	services.StdJSONResp(resp, nil, http.StatusCreated, "")
+	StdJSONResp(resp, nil, http.StatusCreated, "")
 }
 
 func (d *PictureAction) preview(resp http.ResponseWriter, req *http.Request) {
 	fileName := helper.GetFileName(req.URL.Path)
 	uid := helper.GetUid(d.sgr, req)
 	if "" == uid {
-		services.StdJSONResp(resp, nil, http.StatusUnauthorized, "")
+		StdJSONResp(resp, nil, http.StatusUnauthorized, "")
 		return
 	}
 	err := d.dav.GenPreview(uid, fileName)
 	if nil != err {
-		services.StdJSONResp(resp, nil, http.StatusNotFound, err.Error())
+		StdJSONResp(resp, nil, http.StatusNotFound, err.Error())
 		return
 	}
-	services.StdJSONResp(resp, nil, http.StatusCreated, "")
+	StdJSONResp(resp, nil, http.StatusCreated, "")
 }
 
 func (d *PictureAction) list(resp http.ResponseWriter, req *http.Request) {
 	if http.MethodGet != req.Method {
-		services.StdJSONResp(resp, nil, http.StatusMethodNotAllowed, "")
+		StdJSONResp(resp, nil, http.StatusMethodNotAllowed, "")
 		return
 	}
 	uid := helper.GetUid(d.sgr, req)
-	rangeList := helper.GetRange(&req.Header)
 	if "" == uid {
-		services.StdJSONResp(resp, nil, http.StatusUnauthorized, "")
+		StdJSONResp(resp, nil, http.StatusUnauthorized, "")
 		return
 	}
+	rangeList := helper.GetRange(&req.Header)
 	list, err := d.listSrv.List(uid, rangeList)
 	if nil != err {
-		services.StdJSONResp(resp, nil, http.StatusServiceUnavailable, err.Error())
+		StdJSONResp(resp, nil, http.StatusServiceUnavailable, err.Error())
 		return
 	}
-	services.StdJSONResp(resp, list, 0, "")
+	StdJSONResp(resp, list, 0, "")
 }
 
 func (d *PictureAction) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
@@ -231,11 +231,11 @@ func (d *PictureAction) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 		lev = "raw"
 	}
 	if !imgCache[lev] {
-		services.StdJSONResp(resp, nil, http.StatusNotFound, "")
+		StdJSONResp(resp, nil, http.StatusNotFound, "")
 		return
 	}
 	if "raw" != lev && http.MethodGet != req.Method && http.MethodHead != req.Method {
-		services.StdJSONResp(resp, nil, http.StatusMethodNotAllowed, "")
+		StdJSONResp(resp, nil, http.StatusMethodNotAllowed, "")
 		return
 	}
 	req.URL.Path = fmt.Sprintf("/%s%s", lev, subPath)
@@ -254,5 +254,5 @@ func (d *PictureAction) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 		return
 	default:
 	}
-	services.StdJSONResp(resp, nil, http.StatusMethodNotAllowed, "")
+	StdJSONResp(resp, nil, http.StatusMethodNotAllowed, "")
 }
