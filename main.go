@@ -80,6 +80,7 @@ func main() {
 	router := goengine.InitHttpRoute()
 	router.Set("/login", u.ServeHTTP)
 	router.StartWith(prefix, p.ServeHTTP)
+
 	engine := goengine.New(router, nil)
 
 	listen := conf.GetVal("listen")
