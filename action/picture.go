@@ -101,14 +101,13 @@ func NewPictureAction(prefixLen int, sgr goengine.SessionManager, listSrv *servi
 
 func (d *PictureAction) read(resp http.ResponseWriter, req *http.Request) {
 	uid := helper.GetUid(d.sgr, req)
-	fileName := helper.GetFileName(req.URL.Path)
 	cachedETag := helper.GetNoneMatch(&req.Header)
 	if "" == uid {
 		StdJSONResp(resp, nil, http.StatusUnauthorized, "")
 		return
 	}
 
-	meta, stat, msg := d.dav.SendFile(uid, req.Method, req.URL.Path, fileName, cachedETag)
+	meta, stat, msg := d.dav.SendFile(uid, req.URL.Path, http.MethodHead == req.Method, cachedETag)
 	if nil == meta {
 		if http.StatusNotModified == stat {
 			resp.WriteHeader(http.StatusNotModified)

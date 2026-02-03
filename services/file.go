@@ -65,7 +65,8 @@ func (d *FileService) getLocalFilename(reqPath, baseName, extName string) string
 	return path.Clean(path.Join(d.rootPath, dirPath, baseName+extName))
 }
 
-func (d *FileService) SendFile(uid, method, urlPath, fileName string, cachedETag *helper.ETag) (*FileMeta, int, string) {
+func (d *FileService) SendFile(uid, urlPath string, infoOnly bool, cachedETag *helper.ETag) (*FileMeta, int, string) {
+	fileName := helper.GetFileName(urlPath)
 	eTagVal, err := d.dbi.Info(uid, fileName)
 	if nil != err {
 		return nil, http.StatusNotFound, ""
@@ -93,7 +94,7 @@ func (d *FileService) SendFile(uid, method, urlPath, fileName string, cachedETag
 		ETag:        eTagVal,
 		OutStream:   nil,
 	}
-	if http.MethodHead == method {
+	if infoOnly {
 		fp.Close()
 	} else {
 		out.OutStream = fp
