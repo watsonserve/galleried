@@ -20,24 +20,12 @@ func NewListService(dbi *dao.DBI, root string) *ListService {
 	}
 }
 
-func (d *ListService) List(resp http.ResponseWriter, req *http.Request) {
-	uid := helper.GetUid(req)
-	if "" == uid {
-		StdJSONResp(resp, nil, http.StatusUnauthorized, "")
-		return
-	}
-	rangeList := helper.GetRange(&req.Header)
-	list, err := d.dbi.List(uid, rangeList)
+func (d *ListService) List(uid string, rangeList []helper.Segment) ([]dao.ResUserImg, error) {
+	return d.dbi.List(uid, rangeList)
 
-	if nil != err {
-		StdJSONResp(resp, nil, http.StatusServiceUnavailable, err.Error())
-		return
-	}
-	StdJSONResp(resp, list, 0, "")
 }
 
-func (d *ListService) delt(resp http.ResponseWriter, req *http.Request) {
-	uid := helper.GetUid(req)
+func (d *ListService) delt(uid string, resp http.ResponseWriter, req *http.Request) {
 	fileName := helper.GetFileName(req.URL.Path)
 	if "" == uid {
 		StdJSONResp(resp, nil, http.StatusUnauthorized, "")
@@ -52,8 +40,7 @@ func (d *ListService) delt(resp http.ResponseWriter, req *http.Request) {
 	StdJSONResp(resp, nil, 0, "")
 }
 
-func (d *ListService) drop(resp http.ResponseWriter, req *http.Request) {
-	uid := helper.GetUid(req)
+func (d *ListService) drop(uid string, resp http.ResponseWriter, req *http.Request) {
 	fileName := helper.GetFileName(req.URL.Path)
 	if "" == uid {
 		StdJSONResp(resp, nil, http.StatusUnauthorized, "")
@@ -66,14 +53,4 @@ func (d *ListService) drop(resp http.ResponseWriter, req *http.Request) {
 	}
 
 	StdJSONResp(resp, nil, 0, "")
-}
-
-func (d *ListService) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
-	switch req.Method {
-	case http.MethodGet:
-		d.List(resp, req)
-		return
-	default:
-	}
-	StdJSONResp(resp, nil, http.StatusMethodNotAllowed, "")
 }

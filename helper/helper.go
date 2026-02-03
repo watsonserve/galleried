@@ -231,14 +231,28 @@ func Write(fp *os.File, offset int64, src io.Reader) error {
 	return err
 }
 
-func GetUid(req *http.Request) string {
-	ctx := req.Context()
-	session := ctx.Value("session").(*goengine.Session)
-	uid := session.Get("uid")
-	if nil == uid {
+type UsrSess struct {
+	OpenId string `json:"open_id"`
+}
+
+func SetUid(sgr goengine.SessionManager, resp http.ResponseWriter, req *http.Request, uid string) error {
+	sess := sgr.LoadSession(req)
+	usr := &UsrSess{OpenId: uid}
+	var err error
+	if err := sess.Set("user", usr); nil == err {
+		err = sgr.Save(resp, sess, -1)
+	}
+	return err
+}
+
+func GetUid(sgr goengine.SessionManager, req *http.Request) string {
+	sess := sgr.LoadSession(req)
+	usr := &UsrSess{}
+	err := sess.Load("user", usr)
+	if nil != err {
 		return ""
 	}
-	return uid.(string)
+	return usr.OpenId
 }
 
 type ETag struct {

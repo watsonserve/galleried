@@ -74,11 +74,13 @@ func main() {
 	listSrv := services.NewListService(dbi, rootDir)
 	fileSrv := services.NewFileService(dbi, rootDir)
 
-	p := action.NewPictureAction(len(prefix)-1, listSrv, fileSrv)
+	p := action.NewPictureAction(len(prefix)-1, sessMgr, listSrv, fileSrv)
+	u := action.NewUserAction([]string{conf.GetVal("app_id"), conf.GetVal("app_secret")}, sessMgr)
 
 	router := goengine.InitHttpRoute()
+	router.Set("/login", u.ServeHTTP)
 	router.StartWith(prefix, p.ServeHTTP)
-	engine := goengine.New(router, sessMgr)
+	engine := goengine.New(router, nil)
 
 	listen := conf.GetVal("listen")
 	if 0 != len(addr) {
