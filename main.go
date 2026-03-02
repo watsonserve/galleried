@@ -53,7 +53,7 @@ func main() {
 		Name:   conf.GetVal("db_name"),
 		Port:   conf.GetVal("db_port"),
 	})
-	rootDir := conf["root"][0]
+	rootDir := conf.GetVal("root")
 	fmt.Printf("root: %s\n", rootDir)
 
 	sessMgr := goengine.InitSessionManager(
@@ -64,6 +64,7 @@ func main() {
 		conf.GetVal("domain"),
 	)
 
+	// var dbi *dao.DBI = nil
 	dbi := dao.NewDAO(dbConn)
 
 	prefix := conf.GetVal("path_prefix")
@@ -77,17 +78,18 @@ func main() {
 	p := action.NewPictureAction(len(prefix)-1, sessMgr, listSrv, fileSrv)
 	u := action.NewUserAction([]string{conf.GetVal("app_id"), conf.GetVal("app_secret")}, sessMgr)
 
+	// sess := map[string]string{
+	// 	"d7c1fb907d6d47bda1f1b0f45baeb878": "bacac18aae9e4cd6aad02bf9ca389664",
+	// }
 	router := goengine.InitHttpRoute()
 	router.Set("/login", u.ServeHTTP)
 	router.StartWith(prefix, p.ServeHTTP)
 
 	engine := goengine.New(router, nil)
-
 	listen := conf.GetVal("listen")
-	if 0 != len(addr) {
+	if 0 < len(addr) {
 		listen = addr[0]
 	}
-
 	if err = http.ListenAndServe(listen, engine); nil != err {
 		panic(err)
 	}
