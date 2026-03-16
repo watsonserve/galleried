@@ -235,18 +235,18 @@ type UsrSess struct {
 	OpenId string `json:"open_id"`
 }
 
-func SetUid(sgr goengine.SessionManager, resp http.ResponseWriter, req *http.Request, uid string) error {
-	sess := sgr.LoadSession(req)
+func SetUid(sgr goengine.SessionManager, rsp http.ResponseWriter, req *http.Request, uid string) error {
+	sess := sgr.LoadSession(rsp, req)
 	usr := &UsrSess{OpenId: uid}
 	var err error
 	if err := sess.Set("user", usr); nil == err {
-		err = sgr.Save(resp, sess, -1)
+		err = sgr.Save(rsp, sess, -1)
 	}
 	return err
 }
 
-func GetUid(sgr goengine.SessionManager, req *http.Request) string {
-	sess := sgr.LoadSession(req)
+func GetUid(sgr goengine.SessionManager, rsp http.ResponseWriter, req *http.Request) string {
+	sess := sgr.LoadSession(rsp, req)
 	usr := &UsrSess{}
 	err := sess.Load("user", usr)
 	if nil != err {

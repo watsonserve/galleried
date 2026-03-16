@@ -81,7 +81,7 @@ func main() {
 	router.Set("/login", u.ServeHTTP)
 	router.StartWith(prefix, p.ServeHTTP)
 
-	engine := goengine.New(router, nil)
+	engine := goengine.New(router)
 
 	listen := conf.GetVal("listen")
 	if 0 != len(addr) {

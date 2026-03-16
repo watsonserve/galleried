@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	github.com/google/uuid v1.6.0
-	github.com/watsonserve/goengine v0.1.14
+	github.com/watsonserve/goengine v0.1.17
 	github.com/watsonserve/goutils v0.1.22
 	github.com/watsonserve/otp v0.0.2
 )

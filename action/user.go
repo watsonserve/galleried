@@ -49,23 +49,23 @@ func (d *UserAction) loadOpenId(cookies []*http.Cookie) (string, error) {
 	return string(buf), nil
 }
 
-func (d *UserAction) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+func (d *UserAction) ServeHTTP(rsp http.ResponseWriter, req *http.Request) {
 	if http.MethodGet != req.Method {
-		StdJSONResp(resp, nil, http.StatusMethodNotAllowed, "")
+		StdJSONResp(rsp, nil, http.StatusMethodNotAllowed, "")
 		return
 	}
 	openId, err := d.loadOpenId(req.Cookies())
 	if nil != err {
-		StdJSONResp(resp, nil, http.StatusBadRequest, err.Error())
+		StdJSONResp(rsp, nil, http.StatusBadRequest, err.Error())
 		return
 	}
-	sess := d.sgr.LoadSession(req)
+	sess := d.sgr.LoadSession(rsp, req)
 	if err = sess.Set("user", map[string]string{"open_id": openId}); nil == err {
-		err = d.sgr.Save(resp, sess, -1)
+		err = d.sgr.Save(rsp, sess, -1)
 	}
 	if nil != err {
-		StdJSONResp(resp, nil, http.StatusBadRequest, err.Error())
+		StdJSONResp(rsp, nil, http.StatusBadRequest, err.Error())
 		return
 	}
-	StdJSONResp(resp, nil, 0, "")
+	StdJSONResp(rsp, nil, 0, "")
 }
