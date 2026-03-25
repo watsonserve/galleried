@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/watsonserve/goengine"
 )
 
 func GenUUIDStr() (string, error) {
@@ -229,30 +228,6 @@ func Write(fp *os.File, offset int64, src io.Reader) error {
 		_, err = io.Copy(fp, src)
 	}
 	return err
-}
-
-type UsrSess struct {
-	OpenId string `json:"open_id"`
-}
-
-func SetUid(sgr goengine.SessionManager, resp http.ResponseWriter, req *http.Request, uid string) error {
-	sess := sgr.LoadSession(req)
-	usr := &UsrSess{OpenId: uid}
-	var err error
-	if err := sess.Set("user", usr); nil == err {
-		err = sgr.Save(resp, sess, -1)
-	}
-	return err
-}
-
-func GetUid(sgr goengine.SessionManager, req *http.Request) string {
-	sess := sgr.LoadSession(req)
-	usr := &UsrSess{}
-	err := sess.Load("user", usr)
-	if nil != err {
-		return ""
-	}
-	return usr.OpenId
 }
 
 type ETag struct {

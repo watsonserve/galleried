@@ -49,23 +49,28 @@ func (d *UserAction) loadOpenId(cookies []*http.Cookie) (string, error) {
 	return string(buf), nil
 }
 
-func (d *UserAction) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
+func (d *UserAction) setUid(rsp http.ResponseWriter, req *http.Request, uid string) error {
+	sess := d.sgr.LoadSession(rsp, req)
+	if err := sess.Set("user", &UsrSess{OpenId: uid}); nil != err {
+		return err
+	}
+	return d.sgr.Save(rsp, sess, -1)
+}
+
+func (d *UserAction) ServeHTTP(rsp http.ResponseWriter, req *http.Request) {
 	if http.MethodGet != req.Method {
-		StdJSONResp(resp, nil, http.StatusMethodNotAllowed, "")
+		StdJSONResp(rsp, nil, http.StatusMethodNotAllowed, "")
 		return
 	}
 	openId, err := d.loadOpenId(req.Cookies())
 	if nil != err {
-		StdJSONResp(resp, nil, http.StatusBadRequest, err.Error())
+		StdJSONResp(rsp, nil, http.StatusBadRequest, err.Error())
 		return
 	}
-	sess := d.sgr.LoadSession(req)
-	if err = sess.Set("user", map[string]string{"open_id": openId}); nil == err {
-		err = d.sgr.Save(resp, sess, -1)
-	}
+	err = d.setUid(rsp, req, openId)
 	if nil != err {
-		StdJSONResp(resp, nil, http.StatusBadRequest, err.Error())
+		StdJSONResp(rsp, nil, http.StatusBadRequest, err.Error())
 		return
 	}
-	StdJSONResp(resp, nil, 0, "")
+	StdJSONResp(rsp, nil, 0, "")
 }
