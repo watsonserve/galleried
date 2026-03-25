@@ -11,12 +11,11 @@ import (
 
 	"github.com/watsonserve/galleried/helper"
 	"github.com/watsonserve/galleried/services"
-	"github.com/watsonserve/goengine"
 )
 
 type PictureAction struct {
 	prefixLen int
-	sgr       goengine.SessionManager
+	sgr       *helper.SessMgr
 	listSrv   *services.ListService
 	dav       *services.FileService
 }
@@ -84,7 +83,7 @@ func getPrams(req *http.Request) (*UploadParams, int, string) {
 	}, 0, ""
 }
 
-func NewPictureAction(prefixLen int, sgr goengine.SessionManager, listSrv *services.ListService, fileSrv *services.FileService) *PictureAction {
+func NewPictureAction(prefixLen int, sgr *helper.SessMgr, listSrv *services.ListService, fileSrv *services.FileService) *PictureAction {
 	return &PictureAction{
 		prefixLen: prefixLen,
 		sgr:       sgr,
@@ -93,18 +92,8 @@ func NewPictureAction(prefixLen int, sgr goengine.SessionManager, listSrv *servi
 	}
 }
 
-func (d *PictureAction) getUid(rsp http.ResponseWriter, req *http.Request) string {
-	sess := d.sgr.LoadSession(rsp, req)
-	usr := &UsrSess{}
-	err := sess.Load("user", usr)
-	if nil != err {
-		return ""
-	}
-	return usr.OpenId
-}
-
 func (d *PictureAction) read(rsp http.ResponseWriter, req *http.Request) {
-	uid := d.getUid(rsp, req)
+	uid := d.sgr.GetUid(rsp, req)
 	cachedETag := helper.GetNoneMatch(&req.Header)
 	if "" == uid {
 		StdJSONResp(rsp, nil, http.StatusUnauthorized, "")
@@ -138,7 +127,7 @@ func (d *PictureAction) read(rsp http.ResponseWriter, req *http.Request) {
 }
 
 func (d *PictureAction) write(rsp http.ResponseWriter, req *http.Request) {
-	uid := d.getUid(rsp, req)
+	uid := d.sgr.GetUid(rsp, req)
 	if "" == uid {
 		StdJSONResp(rsp, nil, http.StatusUnauthorized, "")
 		return
@@ -193,7 +182,7 @@ func (d *PictureAction) write(rsp http.ResponseWriter, req *http.Request) {
 
 func (d *PictureAction) preview(rsp http.ResponseWriter, req *http.Request) {
 	fileName := helper.GetFileName(req.URL.Path)
-	uid := d.getUid(rsp, req)
+	uid := d.sgr.GetUid(rsp, req)
 	if "" == uid {
 		StdJSONResp(rsp, nil, http.StatusUnauthorized, "")
 		return
@@ -211,7 +200,7 @@ func (d *PictureAction) list(rsp http.ResponseWriter, req *http.Request) {
 		StdJSONResp(rsp, nil, http.StatusMethodNotAllowed, "")
 		return
 	}
-	uid := d.getUid(rsp, req)
+	uid := d.sgr.GetUid(rsp, req)
 	if "" == uid {
 		StdJSONResp(rsp, nil, http.StatusUnauthorized, "")
 		return

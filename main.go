@@ -8,9 +8,11 @@ import (
 
 	"github.com/watsonserve/galleried/action"
 	"github.com/watsonserve/galleried/dao"
+	"github.com/watsonserve/galleried/helper"
 	"github.com/watsonserve/galleried/services"
 	"github.com/watsonserve/goengine"
 	"github.com/watsonserve/goutils"
+	"github.com/watsonserve/pass_sdk"
 )
 
 func main() {
@@ -56,13 +58,23 @@ func main() {
 	rootDir := conf.GetVal("root")
 	fmt.Printf("root: %s\n", rootDir)
 
-	sessMgr := goengine.InitSessionManager(
+	sessMgr := helper.InitSessMgr(
 		goengine.NewRedisStore(conf.GetVal("redis_address"), conf.GetVal("redis_password"), 1),
 		conf.GetVal("sess_name"),
 		conf.GetVal("cookie_prefix"),
 		conf.GetVal("session_prefix"),
 		conf.GetVal("domain"),
 	)
+
+	srvInfo := &pass_sdk.SrvInfo{
+		AuthPathname: conf.GetVal("auth_pathname"),
+		AppId: conf.GetVal("app_id"),
+		Scheme: conf.GetVal("scheme"),
+		Host: conf.GetVal("host"),
+		Secret: conf.GetVal("secret"),
+	}
+	pass_sdk.BizAO
+	pass_sdk.BindAuthMgr(srvInfo)
 
 	// var dbi *dao.DBI = nil
 	dbi := dao.NewDAO(dbConn)

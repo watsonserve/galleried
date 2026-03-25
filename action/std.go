@@ -35,7 +35,3 @@ func StdJSONResp(res http.ResponseWriter, data interface{}, code int, msg string
 
 	Send(res, code, "application/json", buf)
 }
-
-type UsrSess struct {
-	OpenId string `json:"open_id"`
-}

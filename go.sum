@@ -66,6 +66,8 @@ github.com/watsonserve/goutils v0.1.22 h1:gv5gVwDg+cCOvmJkUgpY0KuqteGRZmVv7Nps7Z
 github.com/watsonserve/goutils v0.1.22/go.mod h1:jKpQDNhuTji5FnQwtlmtFVKCzura1VhaqvNUueCx5nY=
 github.com/watsonserve/otp v0.0.2 h1:ISpFXvdCOWM73prxmkAB/370uUYEY3w0eUFC7mMZtyk=
 github.com/watsonserve/otp v0.0.2/go.mod h1:6CO1MZFEH9BHoKhMS3cT3W6wrkLpjNdeQq6MR3LV4Nw=
+github.com/watsonserve/pass_sdk v0.0.8 h1:sYeHExQ/xn5yvZRCihlMvLRIe0LmX/6XD4RorEm4Loo=
+github.com/watsonserve/pass_sdk v0.0.8/go.mod h1:TmiG6WZ7yJCUUk0PiCTtqfesnM5G5kPEmOKmnsDHZIs=
 github.com/xdg-go/pbkdf2 v1.0.0 h1:Su7DPu48wXMwC3bs7MCNG+z4FhcyEuz5dlvchbq0B0c=
 github.com/xdg-go/pbkdf2 v1.0.0/go.mod h1:jrpuAogTd400dnrH08LKmI/xc1MbPOebTwRqcT5RDeI=
 github.com/xdg-go/scram v1.1.2 h1:FHX5I5B4i4hKRVRBCFRxq1iQRej7WO3hhBuJf+UUySY=

@@ -5,24 +5,39 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/watsonserve/goengine"
+	"github.com/watsonserve/galleried/helper"
 	"github.com/watsonserve/otp"
+	"github.com/watsonserve/pass_sdk"
 )
 
 type UserAction struct {
-	sgr         goengine.SessionManager
+	sgr         *helper.SessMgr
 	appIdSecret []string // [appId, appSecret]
 }
 
-func NewUserAction(appIdSecret []string, sgr goengine.SessionManager) *UserAction {
+func NewUserAction(appIdSecret []string, sgr *helper.SessMgr) *UserAction {
 	return &UserAction{
 		sgr:         sgr,
 		appIdSecret: appIdSecret,
 	}
 }
 
+func (d *UserAction) IsCheckedIn(rsp http.ResponseWriter, req *http.Request) bool {
+	uid := d.sgr.GetUid(rsp, req)
+	return "" != uid
+}
+
+func (d *UserAction) Error(rsp http.ResponseWriter, req *http.Request, code int, explain string) {
+	StdJSONResp(rsp, nil, code, "")
+}
+
+func (d *UserAction) User(rsp http.ResponseWriter, req *http.Request, usr *pass_sdk.UserData, rd string) {
+	d.sgr.SetUid(rsp, req, usr.OpenId)
+	StdJSONResp(rsp, nil, http.StatusOK, "")
+}
+
 func (d *UserAction) loadOpenId(cookies []*http.Cookie) (string, error) {
-	r, err := http.NewRequest(http.MethodGet, "https://passport.watsonserve.com/api/open-id.json", nil)
+	r, err := http.NewRequest(http.MethodGet, "https://passport.watsonserve.com/api/open-user.json", nil)
 	if nil != err {
 		return "", err
 	}
@@ -47,30 +62,4 @@ func (d *UserAction) loadOpenId(cookies []*http.Cookie) (string, error) {
 		return "", err
 	}
 	return string(buf), nil
-}
-
-func (d *UserAction) setUid(rsp http.ResponseWriter, req *http.Request, uid string) error {
-	sess := d.sgr.LoadSession(rsp, req)
-	if err := sess.Set("user", &UsrSess{OpenId: uid}); nil != err {
-		return err
-	}
-	return d.sgr.Save(rsp, sess, -1)
-}
-
-func (d *UserAction) ServeHTTP(rsp http.ResponseWriter, req *http.Request) {
-	if http.MethodGet != req.Method {
-		StdJSONResp(rsp, nil, http.StatusMethodNotAllowed, "")
-		return
-	}
-	openId, err := d.loadOpenId(req.Cookies())
-	if nil != err {
-		StdJSONResp(rsp, nil, http.StatusBadRequest, err.Error())
-		return
-	}
-	err = d.setUid(rsp, req, openId)
-	if nil != err {
-		StdJSONResp(rsp, nil, http.StatusBadRequest, err.Error())
-		return
-	}
-	StdJSONResp(rsp, nil, 0, "")
 }
