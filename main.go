@@ -67,14 +67,12 @@ func main() {
 	)
 
 	srvInfo := &pass_sdk.SrvInfo{
-		AuthPathname: conf.GetVal("auth_pathname"),
-		AppId: conf.GetVal("app_id"),
-		Scheme: conf.GetVal("scheme"),
-		Host: conf.GetVal("host"),
-		Secret: conf.GetVal("secret"),
+		CliAuthPathname: conf.GetVal("auth_pathname"),
+		AppId:           conf.GetVal("app_id"),
+		Scheme:          conf.GetVal("scheme"),
+		Host:            conf.GetVal("host"),
+		Secret:          conf.GetVal("secret"),
 	}
-	pass_sdk.BizAO
-	pass_sdk.BindAuthMgr(srvInfo)
 
 	// var dbi *dao.DBI = nil
 	dbi := dao.NewDAO(dbConn)
@@ -90,12 +88,9 @@ func main() {
 	p := action.NewPictureAction(len(prefix)-1, sessMgr, listSrv, fileSrv)
 	u := action.NewUserAction([]string{conf.GetVal("app_id"), conf.GetVal("app_secret")}, sessMgr)
 
-	// sess := map[string]string{
-	// 	"d7c1fb907d6d47bda1f1b0f45baeb878": "bacac18aae9e4cd6aad02bf9ca389664",
-	// }
 	router := goengine.InitHttpRoute()
-	router.Set("/login", u.ServeHTTP)
 	router.StartWith(prefix, p.ServeHTTP)
+	pass_sdk.BindAuthMgr(srvInfo, u, router)
 
 	engine := goengine.New(router)
 	listen := conf.GetVal("listen")
