@@ -35,3 +35,7 @@ func StdJSONResp(res http.ResponseWriter, data interface{}, code int, msg string
 
 	Send(res, code, "application/json", buf)
 }
+
+func StdNilJSONResp(res http.ResponseWriter, msg string) {
+	StdJSONResp(res, nil, http.StatusBadRequest, msg)
+}

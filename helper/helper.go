@@ -114,6 +114,14 @@ func GetOrigin(header *http.Header) *url.URL {
 	}
 }
 
+func GetDestination(header *http.Header) string {
+	return strings.TrimSpace(header.Get("Destination"))
+}
+
+func GetOverwrite(header *http.Header) bool {
+	return !strings.EqualFold(strings.TrimSpace(header.Get("Overwrite")), "F")
+}
+
 func GetEncodeType(header *http.Header) string {
 	return header.Get("Content-Encoding")
 }

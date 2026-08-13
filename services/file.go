@@ -65,9 +65,9 @@ func (d *FileService) getLocalFilename(reqPath, baseName, extName string) string
 	return path.Clean(path.Join(d.rootPath, dirPath, baseName+extName))
 }
 
-func (d *FileService) SendFile(uid, urlPath string, infoOnly bool, cachedETag *helper.ETag) (*FileMeta, int, string) {
+func (d *FileService) SendFile(uid, urlPath string, infoOnly, isRecycled bool, cachedETag *helper.ETag) (*FileMeta, int, string) {
 	fileName := helper.GetFileName(urlPath)
-	eTagVal, err := d.dbi.Info(uid, fileName)
+	eTagVal, err := d.dbi.Info(uid, fileName, isRecycled)
 	if nil != err {
 		return nil, http.StatusNotFound, ""
 	}
@@ -120,4 +120,36 @@ func (d *FileService) GenPreview(uid, fileName string) error {
 	}
 
 	return err
+}
+
+func (d *FileService) Recycle(uid, filename, etag string, rec bool) error {
+	return d.dbi.SetRecycle(uid, filename, etag, rec)
+}
+
+func (d *FileService) DeleteFile(uid, fileName, eTagVal string) (int, string, error) {
+	if "" == eTagVal {
+		return http.StatusPreconditionFailed, "", nil
+	}
+
+	shouldCleanup, err := d.dbi.DeleteRecycle(uid, fileName, eTagVal)
+	if nil != err {
+		return http.StatusBadRequest, err.Error(), err
+	}
+	if !shouldCleanup {
+		return 0, "", nil
+	}
+
+	targets := []string{
+		path.Join(d.rootPath, "raw", eTagVal+path.Ext(fileName)),
+		path.Join(d.rootPath, "preview", eTagVal+".webp"),
+		path.Join(d.rootPath, "thumb", eTagVal+".webp"),
+	}
+	for _, absPath := range targets {
+		err = os.Remove(absPath)
+		if nil != err && !os.IsNotExist(err) {
+			return http.StatusServiceUnavailable, err.Error(), err
+		}
+	}
+
+	return 0, "", nil
 }

@@ -19,8 +19,8 @@ func NewListService(dbi *dao.DBI, root string) *ListService {
 	}
 }
 
-func (d *ListService) List(uid string, rangeList []helper.Segment) ([]dao.ResUserImg, error) {
-	return d.dbi.List(uid, rangeList)
+func (d *ListService) List(uid string, isRecycle bool, rangeList []helper.Segment) ([]dao.ResUserImg, error) {
+	return d.dbi.List(uid, isRecycle, rangeList)
 
 }
 

@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"path"
 	"strings"
 
 	"github.com/watsonserve/galleried/helper"
@@ -92,7 +93,26 @@ func NewPictureAction(prefixLen int, sgr *helper.SessMgr, listSrv *services.List
 	}
 }
 
-func (d *PictureAction) read(rsp http.ResponseWriter, req *http.Request) {
+func (d *PictureAction) list(rsp http.ResponseWriter, req *http.Request, isRecycled bool) {
+	if http.MethodGet != req.Method {
+		StdJSONResp(rsp, nil, http.StatusMethodNotAllowed, "")
+		return
+	}
+	uid := d.sgr.GetUid(rsp, req)
+	if "" == uid {
+		StdJSONResp(rsp, nil, http.StatusUnauthorized, "")
+		return
+	}
+	rangeList := helper.GetRange(&req.Header)
+	list, err := d.listSrv.List(uid, isRecycled, rangeList)
+	if nil != err {
+		StdJSONResp(rsp, nil, http.StatusServiceUnavailable, err.Error())
+		return
+	}
+	StdJSONResp(rsp, list, 0, "")
+}
+
+func (d *PictureAction) read(rsp http.ResponseWriter, req *http.Request, isRecycled bool) {
 	uid := d.sgr.GetUid(rsp, req)
 	cachedETag := helper.GetNoneMatch(&req.Header)
 	if "" == uid {
@@ -100,7 +120,7 @@ func (d *PictureAction) read(rsp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	meta, stat, msg := d.dav.SendFile(uid, req.URL.Path, http.MethodHead == req.Method, cachedETag)
+	meta, stat, msg := d.dav.SendFile(uid, req.URL.Path, http.MethodHead == req.Method, isRecycled, cachedETag)
 	if nil == meta {
 		if http.StatusNotModified == stat {
 			rsp.WriteHeader(http.StatusNotModified)
@@ -124,6 +144,31 @@ func (d *PictureAction) read(rsp http.ResponseWriter, req *http.Request) {
 	}
 	defer outStream.Close()
 	io.Copy(rsp, outStream)
+}
+
+func (d *PictureAction) move(rsp http.ResponseWriter, req *http.Request, isRecycled bool) {
+	uid := d.sgr.GetUid(rsp, req)
+	if "" == uid {
+		StdJSONResp(rsp, nil, http.StatusUnauthorized, "")
+		return
+	}
+
+	etag := getIfMatch(&req.Header)
+	dst := helper.GetDestination(&req.Header)
+	src := path.Clean(req.URL.Path)
+
+	if (!isRecycled || "/" != dst) && (isRecycled || "/recycle/" != dst) {
+		StdJSONResp(rsp, nil, http.StatusConflict, "")
+		return
+	}
+
+	err := d.dav.Recycle(uid, src, etag, "/recycle/" == dst)
+	if nil != err {
+		StdNilJSONResp(rsp, err.Error())
+		return
+	}
+	rsp.WriteHeader(http.StatusNoContent)
+	rsp.Write(nil)
 }
 
 func (d *PictureAction) write(rsp http.ResponseWriter, req *http.Request) {
@@ -195,59 +240,90 @@ func (d *PictureAction) preview(rsp http.ResponseWriter, req *http.Request) {
 	StdJSONResp(rsp, nil, http.StatusCreated, "")
 }
 
-func (d *PictureAction) list(rsp http.ResponseWriter, req *http.Request) {
-	if http.MethodGet != req.Method {
-		StdJSONResp(rsp, nil, http.StatusMethodNotAllowed, "")
-		return
-	}
+func (d *PictureAction) remove(rsp http.ResponseWriter, req *http.Request) {
 	uid := d.sgr.GetUid(rsp, req)
 	if "" == uid {
 		StdJSONResp(rsp, nil, http.StatusUnauthorized, "")
 		return
 	}
-	rangeList := helper.GetRange(&req.Header)
-	list, err := d.listSrv.List(uid, rangeList)
-	if nil != err {
-		StdJSONResp(rsp, nil, http.StatusServiceUnavailable, err.Error())
+
+	etag := getIfMatch(&req.Header)
+	if "" == etag {
+		StdJSONResp(rsp, nil, http.StatusPreconditionFailed, "")
 		return
 	}
-	StdJSONResp(rsp, list, 0, "")
+
+	fileName := helper.GetFileName(req.URL.Path)
+	stat, msg, err := d.dav.DeleteFile(uid, fileName, etag)
+	if nil != err || 0 != stat {
+		StdJSONResp(rsp, nil, stat, msg)
+		return
+	}
+	rsp.WriteHeader(http.StatusNoContent)
+	rsp.Write(nil)
 }
 
-func (d *PictureAction) ServeHTTP(rsp http.ResponseWriter, req *http.Request) {
-	subPath := req.URL.Path[d.prefixLen:]
-
-	if "/" == subPath {
-		d.list(rsp, req)
-		return
+func (d *PictureAction) levPath(req *http.Request) int {
+	uri := req.URL
+	subPath := uri.Path[d.prefixLen:]
+	isRecycle := strings.HasPrefix(subPath, "/recycle/")
+	if isRecycle {
+		subPath = subPath[len("/recycle"):]
 	}
 
-	lev := req.URL.Query().Get("lev")
+	lev := uri.Query().Get("lev")
 	if "" == lev {
 		lev = "raw"
 	}
 	if !imgCache[lev] {
-		StdJSONResp(rsp, nil, http.StatusNotFound, "")
-		return
+		return http.StatusNotFound
 	}
 	if "raw" != lev && http.MethodGet != req.Method && http.MethodHead != req.Method {
-		StdJSONResp(rsp, nil, http.StatusMethodNotAllowed, "")
+		return http.StatusMethodNotAllowed
+	}
+	uri.Path = fmt.Sprintf("/%s%s", lev, subPath)
+	uri.RawQuery = fmt.Sprintf("recycle=%d", isRecycle)
+	return 0
+}
+
+func (d *PictureAction) ServeHTTP(rsp http.ResponseWriter, req *http.Request) {
+	code := d.levPath(req)
+	if 0 != code {
+		StdJSONResp(rsp, nil, code, "")
 		return
 	}
-	req.URL.Path = fmt.Sprintf("/%s%s", lev, subPath)
+
+	isRecycled := "1" == req.URL.Query().Get("recycle")
+
+	if "/" == req.URL.Path {
+		d.list(rsp, req, isRecycled)
+		return
+	}
 
 	switch req.Method {
 	case http.MethodHead:
 		fallthrough
 	case http.MethodGet:
-		d.read(rsp, req)
+		d.read(rsp, req, isRecycled)
+		return
+	case "MOVE":
+		d.move(rsp, req, isRecycled)
 		return
 	case http.MethodPut:
-		d.write(rsp, req)
-		return
+		if !isRecycled {
+			d.write(rsp, req)
+			return
+		}
 	case http.MethodPost:
-		d.preview(rsp, req)
-		return
+		if !isRecycled {
+			d.preview(rsp, req)
+			return
+		}
+	case http.MethodDelete:
+		if isRecycled {
+			d.remove(rsp, req)
+			return
+		}
 	default:
 	}
 	StdJSONResp(rsp, nil, http.StatusMethodNotAllowed, "")
